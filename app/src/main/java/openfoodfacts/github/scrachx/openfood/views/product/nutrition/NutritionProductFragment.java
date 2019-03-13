@@ -24,6 +24,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -96,6 +97,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class NutritionProductFragment extends BaseFragment implements CustomTabActivityHelper.ConnectionCallback {
 
+    private static final int EDIT_REQUEST_CODE = 2;
     @BindView(R.id.imageGrade)
     ImageView img;
     @BindView(R.id.imageGradeLayout)
@@ -143,10 +145,12 @@ public class NutritionProductFragment extends BaseFragment implements CustomTabA
     private CustomTabActivityHelper customTabActivityHelper;
     private Uri nutritionScoreUri;
     //the following booleans indicate whether the prompts are to be made visible
-    private boolean showNutritionPrompt = false;
-    private boolean showCategoryPrompt = false;
+  
+    private boolean showNutritionPrompt;
+    private boolean showCategoryPrompt;
     //boolean to determine if nutrition data should be shown
     private boolean showNutritionData=true;
+
     private Product product;
     private State mState;
 
@@ -165,10 +169,11 @@ public class NutritionProductFragment extends BaseFragment implements CustomTabA
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(nutrimentsRecyclerView.getContext(), VERTICAL);
         nutrimentsRecyclerView.addItemDecoration(dividerItemDecoration);
         if(intent!=null && intent.getExtras()!=null && intent.getExtras().getSerializable("state")!=null){
-            refreshView((State) intent.getExtras().getSerializable("state"));
+            mState = (State) intent.getExtras().getSerializable("state");
         }else{
-            refreshView(ProductFragment.mState);
+            mState = ProductFragment.mState;
         }
+        refreshView(mState);
     }
 
     @Override
@@ -176,6 +181,9 @@ public class NutritionProductFragment extends BaseFragment implements CustomTabA
         super.refreshView(state);
         mState = state;
         product = state.getProduct();
+        showNutritionPrompt = false;
+        showCategoryPrompt = false;
+
         //checks the product states_tags to determine which prompt to be shown
         List<String> statesTags = product.getStatesTags();
         if (statesTags.contains("en:categories-to-be-completed")) {
@@ -199,6 +207,8 @@ public class NutritionProductFragment extends BaseFragment implements CustomTabA
             } else if (showCategoryPrompt) {
                 nutriscorePrompt.setText(getString(R.string.add_category_prompt_text));
             }
+        } else {
+            nutriscorePrompt.setVisibility(View.GONE);
         }
 
         if (!showNutritionData) {
@@ -619,6 +629,10 @@ public class NutritionProductFragment extends BaseFragment implements CustomTabA
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        if (resultCode == RESULT_OK) {
+            refreshView(mState);
+        }
+
         if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             if (resultCode == RESULT_OK) {
@@ -701,6 +715,6 @@ public class NutritionProductFragment extends BaseFragment implements CustomTabA
         //adds the information about the prompt when navigating the user to the edit the product
         intent.putExtra("modify_category_prompt", showCategoryPrompt);
         intent.putExtra("modify_nutrition_prompt", showNutritionPrompt);
-        startActivity(intent);
+        startActivityForResult(intent, EDIT_REQUEST_CODE);
     }
 }
