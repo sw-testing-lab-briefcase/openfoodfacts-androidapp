@@ -7,16 +7,17 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.MenuItem;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.widget.Toolbar;
+import androidx.viewpager.widget.ViewPager;
+import butterknife.BindView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.tabs.TabLayout;
-import androidx.viewpager.widget.ViewPager;
-import androidx.appcompat.widget.Toolbar;
-import android.view.MenuItem;
-import butterknife.BindView;
 import openfoodfacts.github.scrachx.openfood.BuildConfig;
 import openfoodfacts.github.scrachx.openfood.R;
 import openfoodfacts.github.scrachx.openfood.fragments.ContributorsFragment;
@@ -71,22 +72,22 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
         setTitle(getString(R.string.app_name_long));
 
         setSupportActionBar(toolbar);
-        if(getSupportActionBar()!=null) {
+        if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-		api = new OpenFoodAPIClient( this );
+        api = new OpenFoodAPIClient(this);
 
-		mState = (State) getIntent().getSerializableExtra("state" );
+        mState = (State) getIntent().getSerializableExtra("state");
         //no state-> we can't display anything. we go back to home.
-        if(mState==null){
+        if (mState == null) {
             final Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             startActivity(intent);
         }
 
-		setupViewPager( viewPager );
+        setupViewPager(viewPager);
 
-		tabLayout.setupWithViewPager( viewPager );
+        tabLayout.setupWithViewPager(viewPager);
 
         // Get the user preference for scan on shake feature and open ContinuousScanActivity if the user has enabled the feature
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -104,8 +105,12 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
                 Utils.scan(ProductActivity.this);
             }
         });
-        BottomNavigationListenerInstaller.install(bottomNavigationView,this,this);
-	}
+        BottomNavigationListenerInstaller.install(bottomNavigationView, this, this);
+        // ATTENTION: This was auto-generated to handle app links.
+        Intent appLinkIntent = getIntent();
+        String appLinkAction = appLinkIntent.getAction();
+        Uri appLinkData = appLinkIntent.getData();
+    }
 
 	@Override
 	protected void onActivityResult( int requestCode, int resultCode, Intent data )
