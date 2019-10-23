@@ -10,11 +10,19 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
+import android.view.MenuItem;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.widget.Toolbar;
+import androidx.viewpager.widget.ViewPager;
+import butterknife.BindView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.tabs.TabLayout;
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 
 import androidx.viewpager.widget.ViewPager;
 import androidx.appcompat.widget.Toolbar;
@@ -26,7 +34,9 @@ import openfoodfacts.github.scrachx.openfood.BuildConfig;
 import openfoodfacts.github.scrachx.openfood.R;
 import openfoodfacts.github.scrachx.openfood.fragments.ContributorsFragment;
 import openfoodfacts.github.scrachx.openfood.fragments.ProductPhotosFragment;
+import openfoodfacts.github.scrachx.openfood.models.HistoryProductDao;
 import openfoodfacts.github.scrachx.openfood.models.Nutriments;
+import openfoodfacts.github.scrachx.openfood.models.Product;
 import openfoodfacts.github.scrachx.openfood.models.State;
 import openfoodfacts.github.scrachx.openfood.network.OpenFoodAPIClient;
 import openfoodfacts.github.scrachx.openfood.utils.ShakeDetector;
@@ -55,7 +65,9 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
     BottomNavigationView bottomNavigationView;
     private ProductFragmentPagerAdapter adapterResult;
     private OpenFoodAPIClient api;
+    private Disposable disposable;
     private State mState;
+    private HistoryProductDao mHistoryProductDao;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private ShakeDetector mShakeDetector;
@@ -66,9 +78,11 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         if (getResources().getBoolean(R.bool.portrait_only)) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
+
         setContentView(R.layout.activity_product);
         setTitle(getString(R.string.app_name_long));
 
@@ -80,15 +94,30 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
         api = new OpenFoodAPIClient(this);
 
         mState = (State) getIntent().getSerializableExtra("state");
-        //no state-> we can't display anything. we go back to home.
-        if (mState == null) {
+
+         if (Intent.ACTION_VIEW.equals(getIntent().getAction())) {
+            // handle opening the app via product page url
+            Uri data = getIntent().getData();
+            String[] paths = data.toString().split("/"); // paths[4]
+            mState = new State();
+            loadProductDataFromUrl(paths[4]);
+        } else if (mState == null) {
             final Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             startActivity(intent);
+        } else {
+            initViews();
         }
+	}
 
-        setupViewPager(viewPager);
+    /**
+     * Initialise the content that shows the content on the device.
+     */
+	private void initViews(){
+        mHistoryProductDao = Utils.getAppDaoSession(ProductActivity.this).getHistoryProductDao();
 
-        tabLayout.setupWithViewPager(viewPager);
+		setupViewPager( viewPager );
+
+		tabLayout.setupWithViewPager( viewPager );
 
         // Get the user preference for scan on shake feature and open ContinuousScanActivity if the user has enabled the feature
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -97,16 +126,54 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
         }
         mShakeDetector = new ShakeDetector();
 
-        SharedPreferences shakePreference = PreferenceManager.getDefaultSharedPreferences(this);
-        scanOnShake = shakePreference.getBoolean("shakeScanMode", false);
+        scanOnShake = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean("shakeScanMode", false);
 
         mShakeDetector.setOnShakeListener(count -> {
-
             if (scanOnShake) {
                 Utils.scan(ProductActivity.this);
             }
         });
-        BottomNavigationListenerInstaller.install(bottomNavigationView, this, this);
+
+        BottomNavigationListenerInstaller.install(bottomNavigationView,this,this);
+    }
+
+    /**
+     * Get the product data from the barcode. This takes the barcode and retrieves the information.
+     * @param barcode from the URL.
+     */
+	private void loadProductDataFromUrl(String barcode){
+        if (disposable != null && !disposable.isDisposed()) {
+            //dispose the previous call if not ended.
+            disposable.dispose();
+        }
+
+        api.getProductFullSingle(barcode, Utils.HEADER_USER_AGENT_SCAN)
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe(a -> {
+            })
+            .subscribe(new SingleObserver<State>() {
+                @Override
+                public void onSubscribe(Disposable d) {
+                    disposable = d;
+                }
+
+                @Override
+                public void onSuccess(State state) {
+                    mState = state;
+                    getIntent().putExtra("state", state);
+                    if (mState != null) {
+                        initViews();
+                    } else {
+                        finish();
+                    }
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    Log.i(getClass().getSimpleName(), "Failed to load product data", e);
+                    finish();
+                }
+            });
     }
 
     @Override
@@ -221,6 +288,28 @@ public class ProductActivity extends BaseActivity implements OnRefreshListener {
         if (scanOnShake) {
             //register the listener
             mSensorManager.registerListener(mShakeDetector, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
+        }
+    }
+
+    private static class HistoryTask extends AsyncTask<Product, Void, Void> {
+        private final HistoryProductDao mHistoryProductDao;
+
+        private HistoryTask(HistoryProductDao mHistoryProductDao) {
+            this.mHistoryProductDao = mHistoryProductDao;
+        }
+
+        @Override
+        protected Void doInBackground(Product... products) {
+            OpenFoodAPIClient.addToHistory(mHistoryProductDao, products[0]);
+            return null;
         }
     }
 
