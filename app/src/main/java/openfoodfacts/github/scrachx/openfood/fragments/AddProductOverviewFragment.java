@@ -273,7 +273,7 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
         if (getActivity() instanceof AddProductActivity && ((AddProductActivity) getActivity()).getInitialValues() != null) {
             getAllDetails(((AddProductActivity) getActivity()).getInitialValues());
         }
-        if(StringUtils.isBlank(languageCode)){
+        if (StringUtils.isBlank(languageCode)) {
             setProductLanguage(appLanguageCode);
         }
     }
@@ -382,7 +382,7 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
     }
 
     private void loadFrontImage(String language) {
-        photoFile=null;
+        photoFile = null;
         final String imageFrontUrl = product.getImageFrontUrl(language);
         if (imageFrontUrl != null && !imageFrontUrl.isEmpty()) {
 
@@ -467,7 +467,7 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
                 editImageFront.setVisibility(View.INVISIBLE);
                 mImageUrl = productDetails.get("image_front");
                 Picasso.get()
-                    .load(FileUtils.LOCALE_FILE_SCHEME+ mImageUrl)
+                    .load(FileUtils.LOCALE_FILE_SCHEME + mImageUrl)
                     .resize(dpsToPixels(50), dpsToPixels(50))
                     .centerInside()
                     .into(imageFront, new Callback() {
@@ -922,7 +922,7 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
     public boolean areRequiredFieldsEmpty() {
         if (mImageUrl == null || mImageUrl.equals("")) {
             Toast.makeText(getContext(), R.string.add_at_least_one_picture, Toast.LENGTH_SHORT).show();
-            if(scrollView!=null) {
+            if (scrollView != null) {
                 scrollView.fullScroll(View.FOCUS_UP);
             }
             return true;
@@ -970,7 +970,7 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
     }
 
     public void showImageProgress() {
-        if(!isAdded()){
+        if (!isAdded()) {
             return;
         }
         if (imageProgress != null) {
@@ -988,7 +988,7 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
     }
 
     public void hideImageProgress(boolean errorInUploading, String message) {
-        if(!isAdded()){
+        if (!isAdded()) {
             return;
         }
         if (imageProgress != null) {
@@ -1010,7 +1010,6 @@ public class AddProductOverviewFragment extends BaseFragment implements PhotoRec
                 .centerInside()
                 .into(imageFront);
         }
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
     }
 
     public void showOtherImageProgress() {
