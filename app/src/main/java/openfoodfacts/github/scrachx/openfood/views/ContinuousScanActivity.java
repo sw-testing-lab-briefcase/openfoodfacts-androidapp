@@ -8,6 +8,7 @@ import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -51,7 +52,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 import butterknife.BindView;
@@ -74,6 +74,7 @@ import openfoodfacts.github.scrachx.openfood.models.Product;
 import openfoodfacts.github.scrachx.openfood.models.State;
 import openfoodfacts.github.scrachx.openfood.network.OpenFoodAPIClient;
 import openfoodfacts.github.scrachx.openfood.utils.LocaleHelper;
+import openfoodfacts.github.scrachx.openfood.utils.OfflineProductService;
 import openfoodfacts.github.scrachx.openfood.utils.ProductUtils;
 import openfoodfacts.github.scrachx.openfood.utils.SwipeDetector;
 import openfoodfacts.github.scrachx.openfood.utils.Utils;
@@ -219,12 +220,18 @@ public class ContinuousScanActivity extends androidx.appcompat.app.AppCompatActi
             return;
         }
         if (disposable != null && !disposable.isDisposed()) {
-            //dispove the previous call if not ended.
+            //dispose the previous call if not ended.
             disposable.dispose();
         }
         if (summaryProductPresenter != null) {
             summaryProductPresenter.dispose();
         }
+
+        OfflineSavedProduct offlineSavedProduct = OfflineProductService.getOfflineProductByBarcode(lastBarcode);
+        if (offlineSavedProduct != null) {
+            showOfflineSavedDetails(offlineSavedProduct);
+        }
+
         client.getProductFullSingle(lastBarcode, Utils.HEADER_USER_AGENT_SCAN)
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe(a -> {
@@ -250,7 +257,9 @@ public class ContinuousScanActivity extends androidx.appcompat.app.AppCompatActi
                     progressBar.setVisibility(GONE);
                     progressText.setVisibility(GONE);
                     if (state.getStatus() == 0) {
-                        productNotFound(getString(R.string.product_not_found, lastBarcode));
+                        if (offlineSavedProduct == null) {
+                            productNotFound(getString(R.string.product_not_found, lastBarcode));
+                        }
                     } else {
                         product = state.getProduct();
                         if (getIntent().getBooleanExtra("compare_product", false)) {
@@ -279,7 +288,9 @@ public class ContinuousScanActivity extends androidx.appcompat.app.AppCompatActi
                         productNotFound.setVisibility(GONE);
                         productNotFoundButton.setVisibility(GONE);
 
-                        if (product.getProductName() == null || product.getProductName().equals("")) {
+                        if (offlineSavedProduct != null && !TextUtils.isEmpty(offlineSavedProduct.getName())) {
+                            name.setText(offlineSavedProduct.getName());
+                        } else if (product.getProductName() == null || product.getProductName().equals("")) {
                             name.setText(R.string.productNameNull);
                         } else {
                             name.setText(product.getProductName());
@@ -293,7 +304,8 @@ public class ContinuousScanActivity extends androidx.appcompat.app.AppCompatActi
                             additives.setText(getString(R.string.productAdditivesUnknown));
                         }
 
-                        final String imageUrl = product.getImageUrl(LocaleHelper.getLanguage(getBaseContext()));
+                        final String imageUrl = Utils.firstNotEmpty(offlineSavedProduct != null ? offlineSavedProduct.getImageFrontLocalUrl() : null,
+                            product.getImageUrl(LocaleHelper.getLanguage(getBaseContext())));
                         if (imageUrl != null) {
                             try {
                                 Picasso.get()
@@ -465,18 +477,17 @@ public class ContinuousScanActivity extends androidx.appcompat.app.AppCompatActi
 
     private void showOfflineSavedDetails(OfflineSavedProduct offlineSavedProduct) {
         showAllViews();
-        HashMap<String, String> productDetails = offlineSavedProduct.getProductDetailsMap();
-        String lc = productDetails.get("lang") != null ? productDetails.get("lang") : "en";
-        if (productDetails.get("product_name_" + lc) != null) {
-            name.setText(productDetails.get("product_name_" + lc));
-        } else if (productDetails.get("product_name_en") != null) {
-            name.setText(productDetails.get("product_name_en"));
+        String pName = offlineSavedProduct.getName();
+        if (!TextUtils.isEmpty(pName)) {
+            name.setText(pName);
         } else {
             name.setText(R.string.productNameNull);
         }
-        if (productDetails.get("image_front") != null) {
+
+        String imageFront = offlineSavedProduct.getImageFrontLocalUrl();
+        if (!TextUtils.isEmpty(imageFront)) {
             Picasso.get()
-                .load("file://" + productDetails.get("image_front"))
+                .load(imageFront)
                 .error(R.drawable.placeholder_thumb)
                 .into(productImage, new Callback() {
                     @Override

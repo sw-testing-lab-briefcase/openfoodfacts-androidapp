@@ -78,9 +78,6 @@ public class AddProductNutritionFactsFragment extends BaseFragment implements Ph
     private static final String[] ALL_UNIT = {UnitUtils.UNIT_GRAM, UnitUtils.UNIT_MILLIGRAM, UnitUtils.UNIT_MICROGRAM, UnitUtils.UNIT_DV, UnitUtils.UNIT_IU};
     private static final String[] ALL_UNIT_SERVING = {UnitUtils.UNIT_GRAM, UnitUtils.UNIT_MILLIGRAM, UnitUtils.UNIT_MICROGRAM, UnitUtils.UNIT_LITER, UnitUtils.UNIT_MILLILITRE};
     private static final String[] UNIT = {UnitUtils.UNIT_GRAM, UnitUtils.UNIT_MILLIGRAM, UnitUtils.UNIT_MICROGRAM};
-    private static final String PARAM_NO_NUTRITION_DATA = "no_nutrition_data";
-    private static final String PARAM_NUTRITION_DATA_PER = "nutrition_data_per";
-    private static final String PARAM_SERVING_SIZE = "serving_size";
     private final NumberKeyListener keyListener = new NumberKeyListener() {
         public int getInputType() {
             return InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD;
@@ -334,16 +331,16 @@ public class AddProductNutritionFactsFragment extends BaseFragment implements Ph
                 imageProgress.setVisibility(View.VISIBLE);
                 loadNutritionsImage(path);
             }
-            if (productDetails.get(PARAM_NO_NUTRITION_DATA) != null) {
+            if (productDetails.get(OfflineSavedProduct.KEYS.PARAM_NO_NUTRITION_DATA) != null) {
                 noNutritionData.setChecked(true);
                 nutritionFactsLayout.setVisibility(View.GONE);
             }
-            if (productDetails.get(PARAM_NUTRITION_DATA_PER) != null) {
-                String s = productDetails.get(PARAM_NUTRITION_DATA_PER);
+            if (productDetails.get(OfflineSavedProduct.KEYS.PARAM_NUTRITION_DATA_PER) != null) {
+                String s = productDetails.get(OfflineSavedProduct.KEYS.PARAM_NUTRITION_DATA_PER);
                 updateSelectedDataSize(s);
             }
-            if (productDetails.get(PARAM_SERVING_SIZE) != null) {
-                String servingSizeValue = productDetails.get(PARAM_SERVING_SIZE);
+            if (productDetails.get(OfflineSavedProduct.KEYS.PARAM_SERVING_SIZE) != null) {
+                String servingSizeValue = productDetails.get(OfflineSavedProduct.KEYS.PARAM_SERVING_SIZE);
                 // Splits the serving size into value and unit. Example: "15g" into "15" and "g"
                 updateServingSizeFrom(servingSizeValue);
             }
@@ -661,18 +658,18 @@ public class AddProductNutritionFactsFragment extends BaseFragment implements Ph
     public void getAllDetails(Map<String, String> targetMap) {
         if (activity instanceof AddProductActivity) {
             if (noNutritionData.isChecked()) {
-                targetMap.put(PARAM_NO_NUTRITION_DATA, "on");
+                targetMap.put(OfflineSavedProduct.KEYS.PARAM_NO_NUTRITION_DATA, "on");
             } else {
                 if (isDataPer100()) {
-                    targetMap.put(PARAM_NUTRITION_DATA_PER, ProductUtils.DEFAULT_NUTRITION_SIZE);
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_NUTRITION_DATA_PER, ProductUtils.DEFAULT_NUTRITION_SIZE);
                 } else if (isDataPerServing()) {
-                    targetMap.put(PARAM_NUTRITION_DATA_PER, "serving");
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_NUTRITION_DATA_PER, "serving");
                 }
                 if (servingSize.getText() == null || servingSize.getText().toString().isEmpty()) {
-                    targetMap.put(PARAM_SERVING_SIZE, "");
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_SERVING_SIZE, "");
                 } else {
                     String servingSizeValue = this.servingSize.getText().toString() + ObjectUtils.toString(this.servingSize.getAttachedSpinner().getSelectedItem());
-                    targetMap.put(PARAM_SERVING_SIZE, servingSizeValue);
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_SERVING_SIZE, servingSizeValue);
                 }
                 for (CustomValidatingEditTextView editTextView : getAllEditTextView()) {
                     if (servingSize.getEntryName().equals(editTextView.getEntryName())) {
@@ -699,16 +696,16 @@ public class AddProductNutritionFactsFragment extends BaseFragment implements Ph
     public void getDetails(Map<String, String> targetMap) {
         if (activity instanceof AddProductActivity) {
             if (noNutritionData.isChecked()) {
-                targetMap.put(PARAM_NO_NUTRITION_DATA, "on");
+                targetMap.put(OfflineSavedProduct.KEYS.PARAM_NO_NUTRITION_DATA, "on");
             } else {
                 if (isDataPer100()) {
-                    targetMap.put(PARAM_NUTRITION_DATA_PER, ProductUtils.DEFAULT_NUTRITION_SIZE);
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_NUTRITION_DATA_PER, ProductUtils.DEFAULT_NUTRITION_SIZE);
                 } else if (isDataPerServing()) {
-                    targetMap.put(PARAM_NUTRITION_DATA_PER, "serving");
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_NUTRITION_DATA_PER, "serving");
                 }
                 if (servingSize.getText() != null && !servingSize.getText().toString().isEmpty()) {
                     String servingSizeValue = this.servingSize.getText().toString() + ObjectUtils.toString(this.servingSize.getAttachedSpinner().getSelectedItem().toString());
-                    targetMap.put(PARAM_SERVING_SIZE, servingSizeValue);
+                    targetMap.put(OfflineSavedProduct.KEYS.PARAM_SERVING_SIZE, servingSizeValue);
                 }
                 for (CustomValidatingEditTextView editTextView : getAllEditTextView()) {
                     if (servingSize.getEntryName().equals(editTextView.getEntryName())) {

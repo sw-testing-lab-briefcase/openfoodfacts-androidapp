@@ -59,7 +59,6 @@ public class AddProductActivity extends AppCompatActivity {
     private static final String KEY_USER_ID = "user_id";
     @SuppressWarnings("squid:S2068")
     private static final String KEY_PASSWORD = "password";
-    public static final String PARAM_LANGUAGE = "lang";
     private static final String ADD_TAG = AddProductActivity.class.getSimpleName();
     public static final String MODIFY_NUTRITION_PROMPT = "modify_nutrition_prompt";
     public static final String MODIFY_CATEGORY_PROMPT = "modify_category_prompt";
@@ -234,7 +233,7 @@ public class AddProductActivity extends AppCompatActivity {
         } else if (offlineSavedProduct != null) {
             mainBundle.putSerializable("edit_offline_product", offlineSavedProduct);
             // Save the already existing images in productDetails for UI
-            imagesFilePath[0] = offlineSavedProduct.getProductDetailsMap().get("image_front");
+            imagesFilePath[0] = offlineSavedProduct.getProductDetailsMap().get(OfflineSavedProduct.KEYS.IMAGE_FRONT);
             imagesFilePath[1] = offlineSavedProduct.getProductDetailsMap().get("image_ingredients");
             imagesFilePath[2] = offlineSavedProduct.getProductDetailsMap().get("image_nutrition_facts");
             // get the status of images from productDetailsMap, whether uploaded or not
@@ -311,7 +310,7 @@ public class AddProductActivity extends AppCompatActivity {
      */
     private void saveProductOffline() {
         // Add the images to the productDetails to display them in UI later.
-        productDetails.put("image_front", imagesFilePath[0]);
+        productDetails.put(OfflineSavedProduct.KEYS.IMAGE_FRONT, imagesFilePath[0]);
         productDetails.put("image_ingredients", imagesFilePath[1]);
         productDetails.put("image_nutrition_facts", imagesFilePath[2]);
         // Add the status of images to the productDetails, whether uploaded or not
@@ -603,11 +602,11 @@ public class AddProductActivity extends AppCompatActivity {
     }
 
     public String getProductLanguageForEdition() {
-        return productDetails.get(PARAM_LANGUAGE);
+        return productDetails.get(OfflineSavedProduct.KEYS.PARAM_LANGUAGE);
     }
 
     public void setProductLanguage(String languageCode) {
-        addToMap(PARAM_LANGUAGE, languageCode);
+        addToMap(OfflineSavedProduct.KEYS.PARAM_LANGUAGE, languageCode);
     }
 
     public void updateLanguage() {
